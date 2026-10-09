@@ -12,7 +12,7 @@ interface Props {
   data: AppData
 }
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 10)  // 10am–11pm
+const HOURS = Array.from({ length: 15 }, (_, i) => i + 10)  // 10am–midnight
 const SLOT_H = 56       // px per hour
 const Q = SLOT_H / 4   // px per 15-min quarter = 14px
 
@@ -487,7 +487,9 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
   const totalSlots = HOURS.length * 4
 
   const slotToTime = (slot: number) => {
-    const totalMins = slot * 15 + 10 * 60
+    const maxSlot = HOURS.length * 4 - 1
+    const clamped = Math.min(slot, maxSlot)
+    const totalMins = clamped * 15 + 10 * 60
     const h = Math.floor(totalMins / 60)
     const m = totalMins % 60
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
