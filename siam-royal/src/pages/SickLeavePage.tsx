@@ -18,7 +18,7 @@ export default function SickLeavePage({ state, setState, data }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const available = data.therapists.filter(t => !sickList.includes(t.id))
+  const available = data.therapists.filter(t => !sickList.includes(t.id) && !state.workingTherapists.includes(t.id))
   const sickTherapists = sickList
     .map(id => data.therapists.find(t => t.id === id))
     .filter(Boolean) as typeof data.therapists
