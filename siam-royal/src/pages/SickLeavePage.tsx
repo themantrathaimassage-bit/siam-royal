@@ -30,7 +30,8 @@ export default function SickLeavePage({ state, setState, data }: Props) {
     setSaving(true)
     setError('')
     try {
-      const dateStr = state.selectedDate.toISOString().slice(0, 10)
+      const d = state.selectedDate
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       const records = data.therapists.map(t => ({
         therapistId: t.id,
         status: sickList.includes(t.id) ? 'sick' : 'working',

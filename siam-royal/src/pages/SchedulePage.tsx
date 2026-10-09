@@ -36,7 +36,7 @@ function toOffset(time: string) {
 
 export default function SchedulePage({ state, setState, data }: Props) {
   const d = state.selectedDate
-  const dateStr = d.toISOString().slice(0, 10)
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,9 +152,10 @@ export default function SchedulePage({ state, setState, data }: Props) {
                 <button className="danger" onClick={async () => {
                   if (!confirm('รีเซ็ตวันนี้? จะกลับไปหน้าเปิดร้านใหม่')) return
                   try { await api.shopOpen.reset(dateStr) } catch {}
+                  const now = new Date()
                   setState({
                     currentPage: 'open-shop',
-                    selectedDate: new Date(),
+                    selectedDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
                     workingTherapists: [],
                     sickTherapists: [],
                     sickLeaveData: [],

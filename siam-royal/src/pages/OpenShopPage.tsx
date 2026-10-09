@@ -20,7 +20,7 @@ const COLORS = ['teal', 'blue', 'orange', 'purple', 'green', 'pink', 'gray']
 export default function OpenShopPage({ state, setState, data }: Props) {
   const d = state.selectedDate
   const dayName = DAYS_TH[d.getDay()]
-  const dateKey = d.toISOString().slice(0, 10)
+  const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 
   const [selectedId, setSelectedId] = useState<string>('')
   const [saving, setSaving] = useState(false)

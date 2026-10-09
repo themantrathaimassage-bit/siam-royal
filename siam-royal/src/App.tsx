@@ -12,9 +12,14 @@ export interface AppData {
   services: Service[]
 }
 
+function localToday() {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+}
+
 const initialState: AppState = {
   currentPage: 'open-shop',
-  selectedDate: new Date(),
+  selectedDate: localToday(),
   workingTherapists: [],
   sickTherapists: [],
   sickLeaveData: [],
@@ -33,7 +38,8 @@ export default function App() {
   const prevPage = useRef<AppState['currentPage']>('open-shop')
 
   useEffect(() => {
-    const dateStr = new Date().toISOString().slice(0, 10)
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
     Promise.all([api.therapists.list(), api.services.list(), api.shopOpen.get(dateStr), api.attendance.get(dateStr)])
       .then(([therapists, services, shopLog, attendance]) => {
         setData({ therapists, services })
