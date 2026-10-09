@@ -584,6 +584,13 @@ app.post('/api/shop-open', async (c) => {
   }
 })
 
+app.delete('/api/shop-open', async (c) => {
+  const date = c.req.query('date')
+  if (!date) return c.json({ error: 'date required' }, 400)
+  await c.env.DB.prepare('DELETE FROM shop_open_log WHERE date = ?').bind(date).run()
+  return c.json({ ok: true })
+})
+
 // ── Pricing ───────────────────────────────────────────────────────────────────
 
 app.get('/api/pricing', async (c) => {

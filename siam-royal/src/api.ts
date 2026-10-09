@@ -109,5 +109,6 @@ export const api = {
     save: (date: string, openedById: string, openedByName: string) =>
       post<ShopOpenLog>('/shop-open', { date, openedById, openedByName }),
     history: (limit = 30) => get<ShopOpenLog[]>(`/shop-open/history?limit=${limit}`),
+    reset: (date: string) => del(`/shop-open?date=${date}`),
   },
 }

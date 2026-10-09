@@ -207,6 +207,22 @@ export default function SchedulePage({ state, setState, data }: Props) {
                 <button onClick={() => setState({ ...state, currentPage: 'sick-leave' })}>
                   🤒 คนหยุด
                 </button>
+                <button className="danger" onClick={async () => {
+                  if (!confirm('รีเซ็ตวันนี้? จะกลับไปหน้าเปิดร้านใหม่')) return
+                  try { await api.shopOpen.reset(dateStr) } catch {}
+                  setState({
+                    currentPage: 'open-shop',
+                    selectedDate: new Date(),
+                    workingTherapists: [],
+                    sickTherapists: [],
+                    sickLeaveData: [],
+                    bookings: [],
+                    shopOpened: false,
+                    setupDone: false,
+                  })
+                }}>
+                  🔄 รีเซ็ตวันนี้
+                </button>
               </div>
             )}
           </div>
