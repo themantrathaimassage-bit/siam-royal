@@ -12,7 +12,7 @@ interface Props {
   data: AppData
 }
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 10)  // 10am–10pm
+const HOURS = Array.from({ length: 14 }, (_, i) => i + 10)  // 10am–11pm
 const SLOT_H = 56       // px per hour
 const Q = SLOT_H / 4   // px per 15-min quarter = 14px
 
