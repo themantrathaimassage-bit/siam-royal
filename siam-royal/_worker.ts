@@ -673,13 +673,14 @@ async function syncFromSheet(db: D1Database) {
     for (let i = 0; i < names.length; i++) {
       const name = names[i]
       const id = name.toLowerCase().replace(/\s+/g, '_')
+      const avatar = name.slice(0, 2).toUpperCase()
       await db
         .prepare(
           `INSERT INTO therapists (id, name, name_en, avatar, specialty, color, active)
            VALUES (?, ?, ?, ?, ?, ?, 1)
-           ON CONFLICT(id) DO UPDATE SET name=excluded.name, name_en=excluded.name_en, active=1`,
+           ON CONFLICT(id) DO UPDATE SET name=excluded.name, name_en=excluded.name_en, avatar=excluded.avatar, active=1`,
         )
-        .bind(id, name, name, AVATARS[i % AVATARS.length], 'Thai massage', COLORS[i % COLORS.length])
+        .bind(id, name, name, avatar, 'Thai massage', COLORS[i % COLORS.length])
         .run()
     }
     const activeIds = names.map((n) => n.toLowerCase().replace(/\s+/g, '_'))
