@@ -125,7 +125,7 @@ app.use('*', async (c, next) => {
 
 app.get('/api/health', (c) => c.json({ ok: true, ts: Date.now() }))
 
-app.post('/api/sync', async (c) => {
+app.get('/api/sync', async (c) => {
   try {
     await syncFromSheet(c.env.DB)
     return c.json({ ok: true })
