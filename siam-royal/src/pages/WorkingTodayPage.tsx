@@ -29,13 +29,15 @@ export default function WorkingTodayPage({ state, setState, data }: Props) {
     .filter(Boolean) as typeof data.therapists
 
   const handleConfirm = () => {
-    setState({ ...state, workingTherapists: selected, currentPage: 'sick-leave' })
+    setState({ ...state, workingTherapists: selected, setupDone: false, currentPage: 'sick-leave' })
   }
 
   return (
     <div className="page working-today-page">
       <div className="top-bar">
-        <button className="back-btn" onClick={() => setState({ ...state, currentPage: 'open-shop' })}>‹</button>
+        {!state.shopOpened && (
+          <button className="back-btn" onClick={() => setState({ ...state, currentPage: 'open-shop' })}>‹</button>
+        )}
         <div className="top-bar-title">ทำงานวันนี้</div>
         <div className="selected-count">{selected.length} คน</div>
       </div>

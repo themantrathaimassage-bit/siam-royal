@@ -40,6 +40,7 @@ export default function SickLeavePage({ state, setState, data }: Props) {
         ...state,
         sickTherapists: sickList,
         sickLeaveData: sickList.map(id => ({ id, reason: '', note: '' })),
+        setupDone: true,
         currentPage: 'schedule'
       })
     } catch (e: unknown) {

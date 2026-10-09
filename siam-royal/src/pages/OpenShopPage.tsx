@@ -54,7 +54,7 @@ export default function OpenShopPage({ state, setState, data }: Props) {
     try {
       const t = data.therapists.find(th => th.id === selectedId)!
       await api.shopOpen.save(dateKey, t.id, t.name)
-      setState({ ...state, currentPage: 'working-today' })
+      setState({ ...state, shopOpened: true, currentPage: 'working-today' })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'เกิดข้อผิดพลาด')
       setSaving(false)

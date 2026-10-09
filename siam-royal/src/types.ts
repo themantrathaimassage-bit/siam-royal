@@ -31,4 +31,6 @@ export interface AppState {
     note: string
   }[]
   bookings: Booking[]
+  shopOpened: boolean
+  setupDone: boolean
 }

@@ -19,6 +19,8 @@ const initialState: AppState = {
   sickTherapists: [],
   sickLeaveData: [],
   bookings: [],
+  shopOpened: false,
+  setupDone: false,
 }
 
 export default function App() {
@@ -31,9 +33,24 @@ export default function App() {
   const prevPage = useRef<AppState['currentPage']>('open-shop')
 
   useEffect(() => {
-    Promise.all([api.therapists.list(), api.services.list()])
-      .then(([therapists, services]) => {
+    const dateStr = new Date().toISOString().slice(0, 10)
+    Promise.all([api.therapists.list(), api.services.list(), api.shopOpen.get(dateStr), api.attendance.get(dateStr)])
+      .then(([therapists, services, shopLog, attendance]) => {
         setData({ therapists, services })
+        if (shopLog) {
+          const working = attendance.filter(a => a.status === 'working').map(a => a.therapistId)
+          const sick = attendance.filter(a => a.status === 'sick').map(a => a.therapistId)
+          setState(prev => ({
+            ...prev,
+            shopOpened: true,
+            setupDone: true,
+            workingTherapists: working,
+            sickTherapists: sick,
+            currentPage: 'schedule',
+          }))
+          setDisplayPage('schedule')
+          prevPage.current = 'schedule'
+        }
         setLoading(false)
       })
       .catch(() => {
