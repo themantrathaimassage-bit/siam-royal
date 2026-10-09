@@ -473,6 +473,7 @@ function BookingBlock({ booking, accent, bg, onEdit, onStatusChange, onDelete, o
   const handlePointerDown = (e: React.PointerEvent) => {
     if (menuPos) return
     e.stopPropagation()
+    e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
     setDragOffsetY(e.clientY - (e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0) - top)
     setDragTop(top)
