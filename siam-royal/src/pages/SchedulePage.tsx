@@ -235,9 +235,12 @@ export default function SchedulePage({ state, setState, data }: Props) {
           const colorKey = COLORS[i % COLORS.length]
           return (
             <div key={t.id} className="sch-staff-pill"
-              style={{ background: BG[colorKey], borderColor: ACCENT[colorKey] + '55' }}>
-              <span className="sch-staff-dot" style={{ background: ACCENT[colorKey] }} />
-              {t.nameEn}
+              style={{ background: BG[colorKey], borderColor: ACCENT[colorKey] + '55', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span className="sch-staff-dot" style={{ background: ACCENT[colorKey] }} />
+                <span style={{ fontWeight: 700 }}>{t.nameEn}</span>
+              </div>
+              <div style={{ fontSize: 10, color: ACCENT[colorKey], paddingLeft: 12 }}>คิว {i + 1}</div>
             </div>
           )
         })}
@@ -530,7 +533,7 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="sch-col-name">{therapist.nameEn}</div>
           <div className="sch-col-room">
-            {isSickExtra ? '🤒 วันหยุด' : `คิว ${queueNum}`} · {jobCount} งาน
+            {isSickExtra ? '🤒 วันหยุด' : `${jobCount} งาน`}
           </div>
         </div>
       </div>
