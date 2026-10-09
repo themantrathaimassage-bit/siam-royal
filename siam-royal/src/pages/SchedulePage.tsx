@@ -408,25 +408,12 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
     setHoverSlot(Math.floor(y / Q))
   }
 
-  const colDownPos = useRef<{ x: number; y: number; slot: number } | null>(null)
-
-  const handleColTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handleColClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.sch-booking')) return
-    const t = e.touches[0]
     const rect = e.currentTarget.getBoundingClientRect()
-    const y = t.clientY - rect.top
+    const y = e.clientY - rect.top
     const slot = Math.floor(y / Q)
-    colDownPos.current = { x: t.clientX, y: t.clientY, slot }
-  }
-
-  const handleColTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!colDownPos.current) return
-    const { x, y, slot } = colDownPos.current
-    colDownPos.current = null
-    const t = e.changedTouches[0]
-    if (Math.abs(t.clientX - x) < 6 && Math.abs(t.clientY - y) < 6) {
-      onSlotClick(slotToTime(slot), x, y)
-    }
+    onSlotClick(slotToTime(slot), e.clientX, e.clientY)
   }
 
   return (
@@ -448,8 +435,7 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         style={{ height: HOURS.length * SLOT_H }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoverSlot(null)}
-        onTouchStart={handleColTouchStart}
-        onTouchEnd={handleColTouchEnd}
+        onClick={handleColClick}
       >
         {/* hour lines */}
         {HOURS.map((_, i) => (
@@ -503,7 +489,6 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onBlockTap }:
   onDelete: (id: string) => void
   onBlockTap: (b: Booking, x: number, y: number) => void
 }) {
-  const touchStart = useRef<{ x: number; y: number } | null>(null)
   const top = toOffset(booking.time)
   const height = Math.max((booking.duration / 15) * Q - 2, Q - 2)
   const isBreak = booking.serviceId === 'break' || booking.clientName === 'พัก'
@@ -512,30 +497,16 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onBlockTap }:
   const blockColor = booking.status === 'completed' ? (payment ? PAYMENT_COLOR[payment] : '#888888') : '#6B8FA8'
   const textColor = '#fff'
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const t = e.touches[0]
-    touchStart.current = { x: t.clientX, y: t.clientY }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart.current) return
-    const t = e.changedTouches[0]
-    const dx = Math.abs(t.clientX - touchStart.current.x)
-    const dy = Math.abs(t.clientY - touchStart.current.y)
-    touchStart.current = null
-    if (dx < 8 && dy < 8) {
-      onBlockTap(booking, t.clientX, t.clientY)
-    }
+    onBlockTap(booking, e.clientX, e.clientY)
   }
 
   return (
     <div
       className={`sch-booking status-${booking.status}${isBreak ? ' break-block' : ''}`}
       style={isBreak ? { top, height } : { top, height, background: blockColor, borderLeft: `4px solid ${blockColor}`, color: textColor }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onClick={handleClick}
     >
       <div className="sch-bk-name" style={{ color: textColor }}>{booking.serviceName} · {booking.duration}น.</div>
       {height > Q + 4 && booking.price ? (
