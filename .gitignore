@@ -6,5 +6,6 @@ server/*.db
 server/*.db-shm
 server/*.db-wal
 server/pricing.json
+siam-royal/.wrangler/
 .DS_Store
 *.log
