@@ -459,7 +459,9 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
     setHoverSlot(Math.floor(y / Q))
   }
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleColPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // only fire slot menu if the click landed directly on the column body (not on a booking block)
+    if ((e.target as HTMLElement).closest('.sch-booking')) return
     const rect = e.currentTarget.getBoundingClientRect()
     const y = e.clientY - rect.top
     const slot = Math.floor(y / Q)
@@ -485,7 +487,7 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         style={{ height: HOURS.length * SLOT_H }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoverSlot(null)}
-        onClick={handleClick}
+        onPointerDown={handleColPointerDown}
       >
         {/* hour lines */}
         {HOURS.map((_, i) => (
@@ -555,11 +557,14 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }
   const handlePointerDown = (e: React.PointerEvent) => {
     if (menuPos) { setMenuPos(null); return }
     e.stopPropagation()
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     pointerDownPos.current = { x: e.clientX, y: e.clientY }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!pointerDownPos.current) return
+    e.stopPropagation()
     const dx = Math.abs(e.clientX - pointerDownPos.current.x)
     const dy = Math.abs(e.clientY - pointerDownPos.current.y)
     if (dx > 4 || dy > 4) {
@@ -569,6 +574,7 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    e.stopPropagation()
     if (pointerDownPos.current) {
       setMenuPos({ x: e.clientX, y: e.clientY })
       pointerDownPos.current = null
