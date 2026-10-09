@@ -1,0 +1,15 @@
+name: Sync Sheet after Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloudflare Pages deploy
+        run: sleep 60
+
+      - name: Trigger Google Sheet sync
+        run: curl -s https://siam-royal.pages.dev/api/sync
