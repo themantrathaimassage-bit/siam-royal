@@ -32,9 +32,14 @@ export default function SickLeavePage({ state, setState, data }: Props) {
     try {
       const d = state.selectedDate
       const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-      const records = data.therapists.map(t => ({
-        therapistId: t.id,
-        status: sickList.includes(t.id) ? 'sick' : 'working',
+      // เรียงตาม queue order (workingTherapists) ก่อน แล้วตามด้วยคนหยุด
+      const ordered = [
+        ...state.workingTherapists,
+        ...sickList.filter(id => !state.workingTherapists.includes(id)),
+      ]
+      const records = ordered.map(id => ({
+        therapistId: id,
+        status: sickList.includes(id) ? 'sick' : 'working',
       }))
       await api.attendance.save(dateStr, records)
       setState({

@@ -234,7 +234,8 @@ app.get('/api/attendance', async (c) => {
       .prepare(
         `SELECT a.*, t.name, t.name_en, t.avatar, t.specialty, t.color
          FROM attendance a JOIN therapists t ON a.therapist_id = t.id
-         WHERE a.date = ?`,
+         WHERE a.date = ?
+         ORDER BY COALESCE(a.queue_order, 999), a.therapist_id`,
       )
       .bind(date)
       .all()
@@ -253,17 +254,19 @@ app.post('/api/attendance', async (c) => {
     const { date, records } = body
     if (!date || !Array.isArray(records)) return c.json({ error: 'date and records required' }, 400)
 
-    for (const r of records) {
+    for (let i = 0; i < records.length; i++) {
+      const r = records[i]
       await c.env.DB
         .prepare(
-          `INSERT INTO attendance (date, therapist_id, status, sick_reason, sick_note)
-           VALUES (?, ?, ?, ?, ?)
+          `INSERT INTO attendance (date, therapist_id, status, sick_reason, sick_note, queue_order)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(date, therapist_id) DO UPDATE SET
              status = excluded.status,
              sick_reason = excluded.sick_reason,
-             sick_note = excluded.sick_note`,
+             sick_note = excluded.sick_note,
+             queue_order = excluded.queue_order`,
         )
-        .bind(date, r.therapistId, r.status || 'working', r.sickReason || null, r.sickNote || null)
+        .bind(date, r.therapistId, r.status || 'working', r.sickReason || null, r.sickNote || null, i)
         .run()
     }
 
