@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && cp _worker.ts dist/_worker.ts",
     "preview": "vite preview",
     "pages:dev": "wrangler pages dev dist --d1 DB=siam-royal-db",
     "typecheck:worker": "tsc --project tsconfig.worker.json",
