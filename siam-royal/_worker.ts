@@ -719,6 +719,13 @@ async function syncFromSheet(db: D1Database) {
         .run()
     }
 
+    // deactivate services ที่ไม่อยู่ใน Sheet
+    const activeServiceIds = serviceNames.map((n) => n.toLowerCase().replace(/\s+/g, '_'))
+    if (activeServiceIds.length > 0) {
+      const placeholders = activeServiceIds.map(() => '?').join(',')
+      await db.prepare(`UPDATE services SET active=0 WHERE id NOT IN (${placeholders})`).bind(...activeServiceIds).run()
+    }
+
     // ── Pricing ───────────────────────────────────────────────────────────
     const pricing: Record<string, number> = {}
     rows.filter((r) => r.Service && r.Price).forEach((r) => {
