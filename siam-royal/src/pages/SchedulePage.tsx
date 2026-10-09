@@ -87,6 +87,13 @@ export default function SchedulePage({ state, setState, data }: Props) {
     } catch { alert('เกิดข้อผิดพลาด') }
   }
 
+  const handleTimeChange = async (id: string, newTime: string) => {
+    try {
+      const updated = await api.bookings.update(id, { time: newTime })
+      setBookings(prev => prev.map(b => b.id === id ? updated : b))
+    } catch { alert('เกิดข้อผิดพลาด') }
+  }
+
   const handleCheckout = async (booking: Booking, payment: string, promotion: string) => {
     try {
       const updated = await api.bookings.update(booking.id, { status: 'completed', note: [payment, promotion].filter(Boolean).join(' · ') || booking.note })
@@ -223,6 +230,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
                   onEdit={b => setModal({ open: true, booking: b })}
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
+                  onTimeChange={handleTimeChange}
                 />
               )
             })}
@@ -343,13 +351,14 @@ function CheckoutModal({ booking, onConfirm, onClose }: {
   )
 }
 
-function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete }: {
+function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete, onTimeChange }: {
   therapist: Therapist; color: string; accent: string; bg: string; queueNum: number; isSickExtra: boolean; jobCount: number
   bookings: Booking[]; nowTop: number
   onSlotClick: (time: string, x: number, y: number) => void
   onEdit: (b: Booking) => void
   onStatusChange: (b: Booking, s: Booking['status']) => void
   onDelete: (id: string) => void
+  onTimeChange: (id: string, newTime: string) => void
 }) {
   const [hoverSlot, setHoverSlot] = useState<number | null>(null)
   const totalSlots = HOURS.length * 4
@@ -414,7 +423,7 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         {bookings.map(b => (
           <BookingBlock
             key={b.id} booking={b} accent={accent} bg={bg}
-            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete}
+            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete} onTimeChange={onTimeChange}
           />
         ))}
       </div>
@@ -439,44 +448,85 @@ function getPaymentFromNote(note: string | null): string {
   return ''
 }
 
-function BookingBlock({ booking, accent, bg, onEdit, onStatusChange, onDelete }: {
+function BookingBlock({ booking, accent, bg, onEdit, onStatusChange, onDelete, onTimeChange }: {
   booking: Booking; accent: string; bg: string
   onEdit: (b: Booking) => void
   onStatusChange: (b: Booking, s: Booking['status']) => void
   onDelete: (id: string) => void
+  onTimeChange: (id: string, newTime: string) => void
 }) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
+  const [dragOffsetY, setDragOffsetY] = useState<number | null>(null)
+  const [dragTop, setDragTop] = useState<number | null>(null)
   const top = toOffset(booking.time)
   const height = Math.max((booking.duration / 15) * Q - 2, Q - 2)
   const isBreak = booking.serviceId === 'break' || booking.clientName === 'พัก'
 
   const STATUS_LABEL: Record<string, string> = { confirmed: 'ยืนยัน', 'in-session': 'กำลังนวด', completed: 'เช็คเอ้าท์' }
   const NEXT: Record<string, Booking['status']> = { confirmed: 'in-session', 'in-session': 'completed', completed: 'confirmed' }
-  const STATUS_COLOR: Record<string, string> = { confirmed: '#2D8C8C', 'in-session': '#1A6E2E', completed: '#888' }
 
   const payment = getPaymentFromNote(booking.note)
-  const blockColor = booking.status === 'completed' ? (payment ? PAYMENT_COLOR[payment] : '#888888') : '#888888'
-  const blockBg = booking.status === 'completed' ? blockColor + '22' : '#88888818'
-  const blockBorder = blockColor
+  const blockColor = booking.status === 'completed' ? (payment ? PAYMENT_COLOR[payment] : '#888888') : '#6B8FA8'
+  const blockBg = blockColor
+  const textColor = '#fff'
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (menuPos) return
+    e.stopPropagation()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDragOffsetY(e.clientY - (e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0) - top)
+    setDragTop(top)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (dragOffsetY === null) return
+    e.stopPropagation()
+    const colTop = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0
+    const rawTop = e.clientY - colTop - dragOffsetY
+    const snapped = Math.round(rawTop / Q) * Q
+    const maxTop = HOURS.length * SLOT_H - height - 2
+    setDragTop(Math.max(0, Math.min(snapped, maxTop)))
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (dragOffsetY === null) return
+    e.stopPropagation()
+    const moved = dragTop !== null && Math.abs(dragTop - top) > Q / 2
+    if (moved && dragTop !== null) {
+      const totalMins = Math.round(dragTop / Q) * 15 + 10 * 60
+      const h = Math.floor(totalMins / 60)
+      const m = totalMins % 60
+      const newTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      onTimeChange(booking.id, newTime)
+    } else if (!moved) {
+      setMenuPos({ x: e.clientX, y: e.clientY })
+    }
+    setDragOffsetY(null)
+    setDragTop(null)
+  }
+
+  const displayTop = dragTop !== null ? dragTop : top
 
   return (
     <div
-      className={`sch-booking status-${booking.status}${isBreak ? ' break-block' : ''}`}
-      style={isBreak ? { top, height } : { top, height, background: blockBg, borderLeft: `4px solid ${blockBorder}` }}
-      onClick={e => { e.stopPropagation(); setMenuPos(v => v ? null : { x: e.clientX, y: e.clientY }) }}
+      className={`sch-booking status-${booking.status}${isBreak ? ' break-block' : ''}${dragOffsetY !== null ? ' dragging' : ''}`}
+      style={isBreak ? { top: displayTop, height } : { top: displayTop, height, background: blockBg, borderLeft: `4px solid ${blockColor}`, color: textColor }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
     >
-      <div className="sch-bk-name">{booking.serviceName} · {booking.duration}น.</div>
+      <div className="sch-bk-name" style={{ color: textColor }}>{booking.serviceName} · {booking.duration}น.</div>
       {height > Q + 4 && booking.price ? (
-        <div className="sch-bk-service">{booking.price.toLocaleString()}</div>
+        <div className="sch-bk-service" style={{ color: textColor + 'CC' }}>{booking.price.toLocaleString()}</div>
       ) : null}
-      <div className="sch-bk-status" style={{ color: blockColor ?? STATUS_COLOR[booking.status] }}>
+      <div className="sch-bk-status" style={{ color: textColor + 'CC' }}>
         ● {STATUS_LABEL[booking.status] ?? booking.status}
       </div>
 
       {menuPos && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 499 }} onClick={e => { e.stopPropagation(); setMenuPos(null) }} />
-          <div className="sch-menu" style={{ top: menuPos.y, left: menuPos.x }} onClick={e => e.stopPropagation()}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 499 }} onPointerDown={e => { e.stopPropagation(); setMenuPos(null) }} />
+          <div className="sch-menu" style={{ top: menuPos.y, left: menuPos.x }} onPointerDown={e => e.stopPropagation()}>
             <button onClick={() => { onStatusChange(booking, NEXT[booking.status]); setMenuPos(null) }}>
               ↗ {STATUS_LABEL[NEXT[booking.status]]}
             </button>
