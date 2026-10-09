@@ -1,0 +1,161 @@
+/* ── Date pill ── */
+.open-shop-page .date-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px; border-radius: 14px;
+  border: 2px solid; cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  margin: 8px 20px 12px 20px;
+  transition: all 0.15s;
+  width: calc(100% - 40px); box-sizing: border-box;
+}
+.open-shop-page .date-pill.is-today {
+  background: #E6F4F2; border-color: var(--teal);
+}
+.open-shop-page .date-pill.not-today {
+  background: #FEF3CD; border-color: #E6A817;
+}
+.open-shop-page .date-pill-main {
+  flex: 1; display: flex; flex-direction: column; gap: 1px;
+}
+.open-shop-page .date-pill-day {
+  font-size: 18px; font-weight: 700; line-height: 1.2;
+}
+.open-shop-page .is-today .date-pill-day { color: var(--teal); }
+.open-shop-page .not-today .date-pill-day { color: #996A00; }
+
+.open-shop-page .date-pill-year {
+  font-size: 13px; font-weight: 500; opacity: 0.7;
+}
+.open-shop-page .is-today .date-pill-year { color: var(--teal); }
+.open-shop-page .not-today .date-pill-year { color: #996A00; }
+
+.open-shop-page .date-pill-icon { font-size: 22px; flex-shrink: 0; }
+.open-shop-page .date-pill-warn {
+  font-size: 12px; font-weight: 700; color: #996A00;
+  background: #F5D97A; border-radius: 50px; padding: 3px 8px;
+}
+
+/* ── Search Box ── */
+.open-shop-page .search-box {
+  margin: 0 20px 14px 20px;
+  background: white;
+  border-radius: 50px;
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--border);
+}
+.open-shop-page .search-icon { font-size: 15px; color: var(--text-light); }
+.open-shop-page .search-box input {
+  border: none; outline: none;
+  font-size: 15px; color: var(--text-dark);
+  font-family: 'Sarabun', sans-serif; width: 100%;
+}
+.open-shop-page .search-clear {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-light); font-size: 14px; padding: 0 4px;
+}
+
+/* ── Selected Banner ── */
+.open-shop-page .selected-opener-banner {
+  margin: 0 20px 14px 20px;
+  background: #E6F4F2;
+  border: 2px solid var(--teal);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.open-shop-page .selected-opener-info { flex: 1; }
+.open-shop-page .selected-opener-label {
+  font-size: 11px; color: var(--teal); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.open-shop-page .selected-opener-name {
+  font-size: 16px; font-weight: 700; color: var(--text-dark); margin-top: 2px;
+}
+.open-shop-page .selected-opener-clear {
+  background: white; border: 1.5px solid var(--teal); color: var(--teal);
+  border-radius: 20px; padding: 5px 12px; font-size: 13px;
+  font-family: 'Sarabun', sans-serif; cursor: pointer; font-weight: 600;
+}
+.open-shop-page .selected-opener-clear:hover { background: var(--teal); color: white; }
+
+/* ── Therapist List ── */
+.open-shop-page .therapist-select-list {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ── Opener Card ── */
+.open-shop-page .opener-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  user-select: none;
+}
+.open-shop-page .opener-card:active { transform: scale(0.98); }
+.open-shop-page .opener-card:hover { border-color: #C0E0DB; background: #FAFEFE; }
+.open-shop-page .opener-card.selected { border-color: var(--teal); background: #EFF8F7; }
+
+.open-shop-page .opener-info { flex: 1; }
+.open-shop-page .opener-name { font-size: 16px; font-weight: 600; color: var(--text-dark); }
+.open-shop-page .opener-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+/* Radio Button */
+.open-shop-page .opener-radio {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid #D0D0D0;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+.open-shop-page .opener-radio.checked { border-color: var(--teal); background: var(--teal); }
+.open-shop-page .opener-radio-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: white;
+}
+
+/* ── No Results ── */
+.open-shop-page .no-results {
+  text-align: center; color: var(--text-light); padding: 24px 0; font-size: 15px;
+}
+
+/* ── Error ── */
+.open-shop-page .open-error-msg {
+  margin: 0 20px 10px 20px;
+  background: #FEE;
+  border: 1px solid #F5C6C6;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  color: #B91C1C;
+  font-size: 14px;
+}
+
+/* ── Desktop 2-col grid for therapist list ── */
+@media (min-width: 768px) {
+  .open-shop-page .therapist-select-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    flex-direction: unset;
+    padding: 0 28px;
+  }
+  .open-shop-page .search-box { margin-left: 28px; margin-right: 28px; }
+  .open-shop-page .selected-opener-banner { margin-left: 28px; margin-right: 28px; }
+  .open-shop-page .open-error-msg { margin-left: 28px; margin-right: 28px; }
+  .open-shop-page .page-header { padding: 28px 28px 0 28px; }
+}

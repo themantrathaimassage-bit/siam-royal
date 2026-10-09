@@ -1,0 +1,5 @@
+const { exec } = require('child_process')
+const proc = exec('/opt/homebrew/bin/lt --port 4000 --subdomain siam-royal')
+proc.stdout.on('data', d => process.stdout.write(d))
+proc.stderr.on('data', d => process.stderr.write(d))
+proc.on('exit', code => { console.log('tunnel exited', code); process.exit(1) })

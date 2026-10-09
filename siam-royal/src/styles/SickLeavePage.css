@@ -1,0 +1,106 @@
+.sick-leave-page .selected-count {
+  font-size: 13px;
+  color: #c0392b;
+  font-weight: 600;
+  background: #FEF0EE;
+  padding: 4px 10px;
+  border-radius: 50px;
+}
+
+.sick-leave-page .section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 20px 10px 20px;
+}
+
+/* ── Chips ── */
+.sick-leave-page .sick-selected-section { padding-top: 16px; margin-bottom: 4px; }
+
+.sick-leave-page .working-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px 16px 20px;
+}
+
+.sick-leave-page .working-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px 7px 10px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.sick-leave-page .working-chip.color-teal   { background: #3D9E8C; }
+.sick-leave-page .working-chip.color-blue   { background: #5B7FA6; }
+.sick-leave-page .working-chip.color-orange { background: #C07840; }
+.sick-leave-page .working-chip.color-purple { background: #7A6AAA; }
+.sick-leave-page .working-chip.color-green  { background: #5C9C6E; }
+.sick-leave-page .working-chip.color-pink   { background: #B86080; }
+.sick-leave-page .working-chip.color-gray   { background: #7A7A8A; }
+
+.sick-leave-page .chip-avatar { font-size: 15px; }
+.sick-leave-page .chip-name   { font-size: 14px; }
+
+.sick-leave-page .chip-remove {
+  background: rgba(0,0,0,0.2);
+  border: none; color: white;
+  border-radius: 50%;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; line-height: 1;
+  cursor: pointer; padding: 0; margin-left: 2px; flex-shrink: 0;
+}
+.sick-leave-page .chip-remove:hover { background: rgba(0,0,0,0.35); }
+
+/* ── Available list ── */
+.sick-leave-page .sick-available-section { padding-top: 4px; margin-bottom: 16px; }
+
+.sick-leave-page .sick-available-list {
+  display: flex; flex-direction: column; gap: 8px; padding: 0 20px;
+}
+
+.sick-leave-page .available-row {
+  background: white; border-radius: var(--radius);
+  padding: 12px 14px; display: flex; align-items: center;
+  gap: 12px; box-shadow: var(--shadow);
+}
+
+.sick-leave-page .available-info { flex: 1; }
+.sick-leave-page .available-name { font-size: 15px; font-weight: 600; color: var(--text-dark); }
+.sick-leave-page .available-sub  { font-size: 12px; color: var(--text-light); margin-top: 1px; }
+
+.sick-leave-page .add-btn {
+  background: #FEF0EE; color: #c0392b;
+  border: 1.5px solid #F5C6C6;
+  border-radius: 50px; padding: 7px 14px;
+  font-size: 14px; font-weight: 600;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+  white-space: nowrap; transition: background 0.15s;
+}
+.sick-leave-page .add-btn:hover { background: #c0392b; color: white; border-color: #c0392b; }
+
+.sick-leave-page .all-added-msg {
+  text-align: center; color: var(--text-light);
+  font-size: 15px; padding: 16px 0 20px 0;
+}
+
+.sick-leave-page .error-msg {
+  margin: 0 20px 12px 20px; background: #FFF0EC; color: #c0392b;
+  border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14px;
+}
+
+/* ── Desktop 2-col ── */
+@media (min-width: 768px) {
+  .sick-leave-page .sick-available-list {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 28px;
+  }
+  .sick-leave-page .section-label  { padding-left: 28px; padding-right: 28px; }
+  .sick-leave-page .working-chips  { padding-left: 28px; padding-right: 28px; }
+}

@@ -1,0 +1,10 @@
+node_modules/
+siam-royal/node_modules/
+server/node_modules/
+siam-royal/dist/
+server/*.db
+server/*.db-shm
+server/*.db-wal
+server/pricing.json
+.DS_Store
+*.log

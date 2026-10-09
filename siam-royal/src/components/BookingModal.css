@@ -1,0 +1,132 @@
+.bm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .bm-overlay { align-items: center; }
+  .bm-sheet { border-radius: 20px !important; max-width: 520px; }
+}
+
+.bm-sheet {
+  background: #F7F8FA;
+  width: 100%; max-width: 520px;
+  border-radius: 24px 24px 0 0;
+  max-height: 92vh; overflow-y: auto;
+  animation: bmUp 0.25s cubic-bezier(.32,1,.46,1);
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+@keyframes bmUp {
+  from { transform: translateY(60%); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+.bm-handle {
+  width: 36px; height: 4px; border-radius: 4px;
+  background: #CCC; margin: 10px auto 0;
+}
+
+.bm-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 10px;
+}
+.bm-title { font-size: 18px; font-weight: 800; color: #1A1A2E; }
+.bm-close {
+  background: #ECEEF2; border: none; border-radius: 50%;
+  width: 30px; height: 30px; font-size: 13px; color: #666;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+.bm-form {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 0 16px 24px;
+}
+
+/* ── Name ── */
+.bm-name-input {
+  background: white; border: 2px solid #ECEEF2; border-radius: 14px;
+  padding: 14px 16px; font-size: 18px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; color: #1A1A2E;
+  outline: none; width: 100%; box-sizing: border-box;
+}
+.bm-name-input:focus { border-color: #2D6E6E; }
+.bm-name-input::placeholder { color: #BEC2CC; font-weight: 400; }
+
+/* ── Section labels ── */
+.bm-section-label {
+  font-size: 11px; font-weight: 700; color: #AAB0BC;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 0 2px;
+}
+
+/* ── Duration row ── */
+.bm-duration-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+.bm-dur-btn {
+  background: white; border: 1.5px solid #ECEEF2; border-radius: 12px;
+  padding: 12px 6px; font-size: 14px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; color: #555;
+  cursor: pointer; transition: all 0.12s; text-align: center;
+}
+.bm-dur-btn.active {
+  background: #1A1A2E; color: white; border-color: #1A1A2E;
+}
+.bm-dur-btn:hover:not(.active) { border-color: #AAB0BC; color: #1A1A2E; }
+
+/* ── Service grid ── */
+.bm-service-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.bm-service-btn {
+  background: white; border: 1.5px solid #ECEEF2; border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 3px;
+  transition: all 0.12s; font-family: 'Sarabun', sans-serif;
+}
+.bm-service-btn.active {
+  background: #1A1A2E; border-color: #1A1A2E;
+}
+.bm-svc-name { font-size: 13px; font-weight: 700; color: #1A1A2E; }
+.bm-svc-info { font-size: 11px; color: #AAB0BC; }
+.bm-service-btn.active .bm-svc-name { color: white; }
+.bm-service-btn.active .bm-svc-info { color: rgba(255,255,255,0.6); }
+
+/* ── Note ── */
+.bm-note {
+  background: white; border: 1.5px solid #ECEEF2; border-radius: 12px;
+  padding: 12px 14px; font-size: 14px; font-family: 'Sarabun', sans-serif;
+  color: #1A1A2E; outline: none; resize: none; width: 100%; box-sizing: border-box;
+}
+.bm-note:focus { border-color: #2D6E6E; }
+
+/* ── Error ── */
+.bm-error {
+  background: #FEF0EE; color: #c0392b; border-radius: 10px;
+  padding: 10px 14px; font-size: 13px;
+}
+
+/* ── Summary bar ── */
+.bm-summary {
+  display: flex; align-items: center; gap: 10px;
+  border: 1.5px solid; border-radius: 12px; padding: 10px 14px;
+}
+.bm-sum-avatar {
+  width: 32px; height: 32px; border-radius: 50%; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; flex-shrink: 0;
+}
+.bm-sum-main { font-size: 13px; font-weight: 700; color: #1A1A2E; }
+.bm-sum-sub  { font-size: 12px; color: #888; margin-top: 1px; }
+
+/* ── Confirm ── */
+.bm-confirm {
+  background: #2D6E6E; color: white; border: none; border-radius: 14px;
+  padding: 16px; font-size: 16px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+  transition: background 0.15s; width: 100%;
+}
+.bm-confirm:hover:not(:disabled) { background: #3D8C8C; }
+.bm-confirm:disabled { opacity: 0.5; cursor: not-allowed; }

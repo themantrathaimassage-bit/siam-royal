@@ -1,0 +1,37 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: #E8E0D8;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Mobile — single column centered card */
+@media (max-width: 767px) {
+  body { background: #F5F0EB; }
+  #root { max-width: 430px; margin: 0 auto; background: #F5F0EB; }
+}
+
+/* Tablet / Desktop — full layout */
+@media (min-width: 768px) {
+  body {
+    background: #E8E0D8;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  #root {
+    max-width: 1280px;
+    margin: 0 auto;
+    background: transparent;
+  }
+}
