@@ -125,6 +125,15 @@ app.use('*', async (c, next) => {
 
 app.get('/api/health', (c) => c.json({ ok: true, ts: Date.now() }))
 
+app.post('/api/sync', async (c) => {
+  try {
+    await syncFromSheet(c.env.DB)
+    return c.json({ ok: true })
+  } catch (e: unknown) {
+    return c.json({ error: e instanceof Error ? e.message : 'sync failed' }, 500)
+  }
+})
+
 // ── Therapists ────────────────────────────────────────────────────────────────
 
 app.get('/api/therapists', async (c) => {
