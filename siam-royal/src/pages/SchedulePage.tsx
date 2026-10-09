@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppState } from '../types'
 import { AppData } from '../App'
 import { api, Booking, Therapist } from '../api'
@@ -44,8 +44,9 @@ export default function SchedulePage({ state, setState, data }: Props) {
   const [slotMenu, setSlotMenu] = useState<{ therapistId: string; time: string; x: number; y: number } | null>(null)
   const [editMenu, setEditMenu] = useState(false)
   const [checkout, setCheckout] = useState<Booking | null>(null)
-  // คนหยุดที่กดเพิ่มเข้าตารางชั่วคราว (มาช่วยงานในวันหยุด)
   const [extraSick, setExtraSick] = useState<string[]>([])
+  const [drag, setDrag] = useState<{ booking: Booking; offsetY: number; x: number; y: number } | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
 
   const workingOrdered = state.workingTherapists
     .map(id => data.therapists.find(t => t.id === id))
@@ -87,11 +88,59 @@ export default function SchedulePage({ state, setState, data }: Props) {
     } catch { alert('เกิดข้อผิดพลาด') }
   }
 
-  const handleTimeChange = async (id: string, newTime: string) => {
+  const handleTimeChange = async (id: string, newTime: string, newTherapistId?: string) => {
     try {
-      const updated = await api.bookings.update(id, { time: newTime })
+      const updated = await api.bookings.update(id, { time: newTime, ...(newTherapistId ? { therapistId: newTherapistId } : {}) })
       setBookings(prev => prev.map(b => b.id === id ? updated : b))
     } catch { alert('เกิดข้อผิดพลาด') }
+  }
+
+  const handleDragStart = (booking: Booking, e: React.PointerEvent) => {
+    const blockTop = toOffset(booking.time)
+    const colBody = (e.currentTarget as HTMLElement).closest('.sch-col-body')
+    const colTop = colBody?.getBoundingClientRect().top ?? 0
+    const offsetY = e.clientY - colTop - blockTop
+    setDrag({ booking, offsetY, x: e.clientX, y: e.clientY })
+  }
+
+  const handleDragMove = (e: React.PointerEvent) => {
+    if (!drag) return
+    setDrag(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)
+  }
+
+  const handleDragEnd = (e: React.PointerEvent) => {
+    if (!drag) return
+    const { booking, offsetY } = drag
+    setDrag(null)
+
+    // หา column ที่ cursor อยู่
+    const cols = gridRef.current?.querySelectorAll('.sch-col-body')
+    let targetTherapistId = booking.therapistId
+    let colTop = 0
+    cols?.forEach((col: Element, i: number) => {
+      const rect = col.getBoundingClientRect()
+      if (e.clientX >= rect.left && e.clientX <= rect.right) {
+        targetTherapistId = allColumns[i]?.id ?? booking.therapistId
+        colTop = rect.top
+      }
+    })
+    if (!colTop) {
+      const col = gridRef.current?.querySelector('.sch-col-body')
+      colTop = col?.getBoundingClientRect().top ?? 0
+    }
+
+    const rawTop = e.clientY - colTop - offsetY
+    const snapped = Math.round(rawTop / Q) * Q
+    const maxTop = HOURS.length * SLOT_H - (booking.duration / 15) * Q
+    const finalTop = Math.max(0, Math.min(snapped, maxTop))
+    const totalMins = Math.round(finalTop / Q) * 15 + 10 * 60
+    const h = Math.floor(totalMins / 60)
+    const m = totalMins % 60
+    const newTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+    if (newTime !== booking.time || targetTherapistId !== booking.therapistId) {
+      handleTimeChange(booking.id, newTime, targetTherapistId)
+    }
   }
 
   const handleCheckout = async (booking: Booking, payment: string, promotion: string) => {
@@ -194,7 +243,42 @@ export default function SchedulePage({ state, setState, data }: Props) {
       {loading ? (
         <div className="sch-loading">กำลังโหลด...</div>
       ) : (
-        <div className="sch-grid-wrap">
+        <div className="sch-grid-wrap" ref={gridRef}
+          onPointerMove={drag ? handleDragMove : undefined}
+          onPointerUp={drag ? handleDragEnd : undefined}
+          style={{ userSelect: drag ? 'none' : undefined }}
+        >
+          {/* Ghost block while dragging */}
+          {drag && (() => {
+            const cols = gridRef.current?.querySelectorAll('.sch-col-body')
+            let ghostLeft = drag.x
+            let ghostWidth = 80
+            let colTop = 0
+            cols?.forEach((col: Element) => {
+              const rect = col.getBoundingClientRect()
+              if (drag.x >= rect.left && drag.x <= rect.right) {
+                ghostLeft = rect.left + 3
+                ghostWidth = rect.width - 6
+                colTop = rect.top
+              }
+            })
+            const rawTop = drag.y - colTop - drag.offsetY
+            const snapped = Math.round(rawTop / Q) * Q
+            const height = Math.max((drag.booking.duration / 15) * Q - 2, Q - 2)
+            return (
+              <div style={{
+                position: 'fixed', left: ghostLeft, top: (colTop || drag.y - drag.offsetY),
+                width: ghostWidth, height,
+                background: '#6B8FA8CC', borderRadius: 6, zIndex: 9999,
+                pointerEvents: 'none', border: '2px dashed #fff',
+                transform: `translateY(${snapped}px)`,
+              }}>
+                <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 6px' }}>
+                  {drag.booking.serviceName}
+                </div>
+              </div>
+            )
+          })()}
           <div className="sch-columns">
             {/* time gutter — sticky inside the same scroll container */}
             <div className="sch-time-col">
@@ -230,7 +314,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
                   onEdit={b => setModal({ open: true, booking: b })}
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
-                  onTimeChange={handleTimeChange}
+                  onDragStart={handleDragStart}
                 />
               )
             })}
@@ -351,14 +435,14 @@ function CheckoutModal({ booking, onConfirm, onClose }: {
   )
 }
 
-function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete, onTimeChange }: {
+function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete, onDragStart }: {
   therapist: Therapist; color: string; accent: string; bg: string; queueNum: number; isSickExtra: boolean; jobCount: number
   bookings: Booking[]; nowTop: number
   onSlotClick: (time: string, x: number, y: number) => void
   onEdit: (b: Booking) => void
   onStatusChange: (b: Booking, s: Booking['status']) => void
   onDelete: (id: string) => void
-  onTimeChange: (id: string, newTime: string) => void
+  onDragStart: (b: Booking, e: React.PointerEvent) => void
 }) {
   const [hoverSlot, setHoverSlot] = useState<number | null>(null)
   const totalSlots = HOURS.length * 4
@@ -422,8 +506,8 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         {/* bookings */}
         {bookings.map(b => (
           <BookingBlock
-            key={b.id} booking={b} accent={accent} bg={bg}
-            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete} onTimeChange={onTimeChange}
+            key={b.id} booking={b}
+            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete} onDragStart={onDragStart}
           />
         ))}
       </div>
@@ -448,16 +532,15 @@ function getPaymentFromNote(note: string | null): string {
   return ''
 }
 
-function BookingBlock({ booking, accent, bg, onEdit, onStatusChange, onDelete, onTimeChange }: {
-  booking: Booking; accent: string; bg: string
+function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }: {
+  booking: Booking
   onEdit: (b: Booking) => void
   onStatusChange: (b: Booking, s: Booking['status']) => void
   onDelete: (id: string) => void
-  onTimeChange: (id: string, newTime: string) => void
+  onDragStart: (b: Booking, e: React.PointerEvent) => void
 }) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffsetY, setDragOffsetY] = useState<number | null>(null)
-  const [dragTop, setDragTop] = useState<number | null>(null)
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null)
   const top = toOffset(booking.time)
   const height = Math.max((booking.duration / 15) * Q - 2, Q - 2)
   const isBreak = booking.serviceId === 'break' || booking.clientName === 'พัก'
@@ -467,51 +550,35 @@ function BookingBlock({ booking, accent, bg, onEdit, onStatusChange, onDelete, o
 
   const payment = getPaymentFromNote(booking.note)
   const blockColor = booking.status === 'completed' ? (payment ? PAYMENT_COLOR[payment] : '#888888') : '#6B8FA8'
-  const blockBg = blockColor
   const textColor = '#fff'
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (menuPos) return
+    if (menuPos) { setMenuPos(null); return }
     e.stopPropagation()
-    e.preventDefault()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    setDragOffsetY(e.clientY - (e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0) - top)
-    setDragTop(top)
+    pointerDownPos.current = { x: e.clientX, y: e.clientY }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (dragOffsetY === null) return
-    e.stopPropagation()
-    const colTop = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0
-    const rawTop = e.clientY - colTop - dragOffsetY
-    const snapped = Math.round(rawTop / Q) * Q
-    const maxTop = HOURS.length * SLOT_H - height - 2
-    setDragTop(Math.max(0, Math.min(snapped, maxTop)))
+    if (!pointerDownPos.current) return
+    const dx = Math.abs(e.clientX - pointerDownPos.current.x)
+    const dy = Math.abs(e.clientY - pointerDownPos.current.y)
+    if (dx > 4 || dy > 4) {
+      pointerDownPos.current = null
+      onDragStart(booking, e)
+    }
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (dragOffsetY === null) return
-    e.stopPropagation()
-    const moved = dragTop !== null && Math.abs(dragTop - top) > Q / 2
-    if (moved && dragTop !== null) {
-      const totalMins = Math.round(dragTop / Q) * 15 + 10 * 60
-      const h = Math.floor(totalMins / 60)
-      const m = totalMins % 60
-      const newTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-      onTimeChange(booking.id, newTime)
-    } else if (!moved) {
+    if (pointerDownPos.current) {
       setMenuPos({ x: e.clientX, y: e.clientY })
+      pointerDownPos.current = null
     }
-    setDragOffsetY(null)
-    setDragTop(null)
   }
-
-  const displayTop = dragTop !== null ? dragTop : top
 
   return (
     <div
-      className={`sch-booking status-${booking.status}${isBreak ? ' break-block' : ''}${dragOffsetY !== null ? ' dragging' : ''}`}
-      style={isBreak ? { top: displayTop, height } : { top: displayTop, height, background: blockBg, borderLeft: `4px solid ${blockColor}`, color: textColor }}
+      className={`sch-booking status-${booking.status}${isBreak ? ' break-block' : ''}`}
+      style={isBreak ? { top, height } : { top, height, background: blockColor, borderLeft: `4px solid ${blockColor}`, color: textColor }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
