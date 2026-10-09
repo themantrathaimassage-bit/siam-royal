@@ -46,6 +46,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
   const [checkout, setCheckout] = useState<Booking | null>(null)
   const [extraSick, setExtraSick] = useState<string[]>([])
   const [drag, setDrag] = useState<{ booking: Booking; offsetY: number; x: number; y: number } | null>(null)
+  const [blockMenu, setBlockMenu] = useState<{ booking: Booking; x: number; y: number } | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const workingOrdered = state.workingTherapists
@@ -95,31 +96,32 @@ export default function SchedulePage({ state, setState, data }: Props) {
     } catch { alert('เกิดข้อผิดพลาด') }
   }
 
-  const handleDragStart = (booking: Booking, e: React.PointerEvent) => {
+  const handleDragStart = (booking: Booking, e: { clientX: number; clientY: number; currentTarget: EventTarget | null }) => {
     const blockTop = toOffset(booking.time)
-    const colBody = (e.currentTarget as HTMLElement).closest('.sch-col-body')
+    const colBody = (e.currentTarget as HTMLElement | null)?.closest('.sch-col-body')
     const colTop = colBody?.getBoundingClientRect().top ?? 0
     const offsetY = e.clientY - colTop - blockTop
     setDrag({ booking, offsetY, x: e.clientX, y: e.clientY })
   }
 
-  const handleDragMove = (e: React.PointerEvent) => {
+  const handleDragTouchMove = (e: React.TouchEvent) => {
     if (!drag) return
-    setDrag(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)
+    const t = e.touches[0]
+    setDrag(prev => prev ? { ...prev, x: t.clientX, y: t.clientY } : null)
   }
 
-  const handleDragEnd = (e: React.PointerEvent) => {
+  const handleDragTouchEnd = (e: React.TouchEvent) => {
     if (!drag) return
+    const t = e.changedTouches[0]
     const { booking, offsetY } = drag
     setDrag(null)
 
-    // หา column ที่ cursor อยู่
     const cols = gridRef.current?.querySelectorAll('.sch-col-body')
     let targetTherapistId = booking.therapistId
     let colTop = 0
     cols?.forEach((col: Element, i: number) => {
       const rect = col.getBoundingClientRect()
-      if (e.clientX >= rect.left && e.clientX <= rect.right) {
+      if (t.clientX >= rect.left && t.clientX <= rect.right) {
         targetTherapistId = allColumns[i]?.id ?? booking.therapistId
         colTop = rect.top
       }
@@ -129,7 +131,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
       colTop = col?.getBoundingClientRect().top ?? 0
     }
 
-    const rawTop = e.clientY - colTop - offsetY
+    const rawTop = t.clientY - colTop - offsetY
     const snapped = Math.round(rawTop / Q) * Q
     const maxTop = HOURS.length * SLOT_H - (booking.duration / 15) * Q
     const finalTop = Math.max(0, Math.min(snapped, maxTop))
@@ -244,9 +246,9 @@ export default function SchedulePage({ state, setState, data }: Props) {
         <div className="sch-loading">กำลังโหลด...</div>
       ) : (
         <div className="sch-grid-wrap" ref={gridRef}
-          onPointerMove={drag ? handleDragMove : undefined}
-          onPointerUp={drag ? handleDragEnd : undefined}
-          style={{ userSelect: drag ? 'none' : undefined }}
+          onTouchMove={drag ? handleDragTouchMove : undefined}
+          onTouchEnd={drag ? handleDragTouchEnd : undefined}
+          style={{ userSelect: drag ? 'none' : undefined, touchAction: drag ? 'none' : undefined }}
         >
           {/* Ghost block while dragging */}
           {drag && (() => {
@@ -315,6 +317,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   onDragStart={handleDragStart}
+                  onBlockTap={(b, x, y) => setBlockMenu({ booking: b, x, y })}
                 />
               )
             })}
@@ -361,6 +364,25 @@ export default function SchedulePage({ state, setState, data }: Props) {
           onClose={() => setCheckout(null)}
         />
       )}
+
+      {blockMenu && (() => {
+        const b = blockMenu.booking
+        const STATUS_LABEL: Record<string, string> = { confirmed: 'ยืนยัน', 'in-session': 'กำลังนวด', completed: 'เช็คเอ้าท์' }
+        const NEXT: Record<string, Booking['status']> = { confirmed: 'in-session', 'in-session': 'completed', completed: 'confirmed' }
+        return (
+          <>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 499 }} onTouchStart={() => setBlockMenu(null)} onClick={() => setBlockMenu(null)} />
+            <div className="sch-menu" style={{ position: 'fixed', top: '40%', left: '50%', transform: 'translateX(-50%)', zIndex: 500 }}>
+              <button onClick={() => { handleStatusChange(b, NEXT[b.status]); setBlockMenu(null) }}>
+                ↗ {STATUS_LABEL[NEXT[b.status]]}
+              </button>
+              <button onClick={() => { setModal({ open: true, booking: b }); setBlockMenu(null) }}>✏️ แก้ไข</button>
+              <button className="danger" onClick={() => { handleDelete(b.id); setBlockMenu(null) }}>🗑 ลบ</button>
+              <button onClick={() => setBlockMenu(null)}>✕ ปิด</button>
+            </div>
+          </>
+        )
+      })()}
     </div>
   )
 }
@@ -435,14 +457,15 @@ function CheckoutModal({ booking, onConfirm, onClose }: {
   )
 }
 
-function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete, onDragStart }: {
+function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete, onDragStart, onBlockTap }: {
   therapist: Therapist; color: string; accent: string; bg: string; queueNum: number; isSickExtra: boolean; jobCount: number
   bookings: Booking[]; nowTop: number
   onSlotClick: (time: string, x: number, y: number) => void
   onEdit: (b: Booking) => void
   onStatusChange: (b: Booking, s: Booking['status']) => void
   onDelete: (id: string) => void
-  onDragStart: (b: Booking, e: React.PointerEvent) => void
+  onDragStart: (b: Booking, e: { clientX: number; clientY: number; currentTarget: EventTarget | null }) => void
+  onBlockTap: (b: Booking, x: number, y: number) => void
 }) {
   const [hoverSlot, setHoverSlot] = useState<number | null>(null)
   const totalSlots = HOURS.length * 4
@@ -459,13 +482,25 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
     setHoverSlot(Math.floor(y / Q))
   }
 
-  const handleColPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // only fire slot menu if the click landed directly on the column body (not on a booking block)
+  const colDownPos = useRef<{ x: number; y: number; slot: number } | null>(null)
+
+  const handleColTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.sch-booking')) return
+    const t = e.touches[0]
     const rect = e.currentTarget.getBoundingClientRect()
-    const y = e.clientY - rect.top
+    const y = t.clientY - rect.top
     const slot = Math.floor(y / Q)
-    onSlotClick(slotToTime(slot), e.clientX, e.clientY)
+    colDownPos.current = { x: t.clientX, y: t.clientY, slot }
+  }
+
+  const handleColTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!colDownPos.current) return
+    const { x, y, slot } = colDownPos.current
+    colDownPos.current = null
+    const t = e.changedTouches[0]
+    if (Math.abs(t.clientX - x) < 6 && Math.abs(t.clientY - y) < 6) {
+      onSlotClick(slotToTime(slot), x, y)
+    }
   }
 
   return (
@@ -487,7 +522,8 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         style={{ height: HOURS.length * SLOT_H }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoverSlot(null)}
-        onPointerDown={handleColPointerDown}
+        onTouchStart={handleColTouchStart}
+        onTouchEnd={handleColTouchEnd}
       >
         {/* hour lines */}
         {HOURS.map((_, i) => (
@@ -509,7 +545,7 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         {bookings.map(b => (
           <BookingBlock
             key={b.id} booking={b}
-            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete} onDragStart={onDragStart}
+            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete} onDragStart={onDragStart} onBlockTap={onBlockTap}
           />
         ))}
       </div>
@@ -534,14 +570,14 @@ function getPaymentFromNote(note: string | null): string {
   return ''
 }
 
-function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }: {
+function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart, onBlockTap }: {
   booking: Booking
   onEdit: (b: Booking) => void
   onStatusChange: (b: Booking, s: Booking['status']) => void
   onDelete: (id: string) => void
-  onDragStart: (b: Booking, e: React.PointerEvent) => void
+  onDragStart: (b: Booking, e: { clientX: number; clientY: number; currentTarget: EventTarget | null }) => void
+  onBlockTap: (b: Booking, x: number, y: number) => void
 }) {
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const pointerDownPos = useRef<{ x: number; y: number } | null>(null)
   const top = toOffset(booking.time)
   const height = Math.max((booking.duration / 15) * Q - 2, Q - 2)
@@ -554,30 +590,31 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }
   const blockColor = booking.status === 'completed' ? (payment ? PAYMENT_COLOR[payment] : '#888888') : '#6B8FA8'
   const textColor = '#fff'
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (menuPos) { setMenuPos(null); return }
+  const handleTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation()
-    e.preventDefault()
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    pointerDownPos.current = { x: e.clientX, y: e.clientY }
+    const t = e.touches[0]
+    pointerDownPos.current = { x: t.clientX, y: t.clientY }
   }
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!pointerDownPos.current) return
-    e.stopPropagation()
-    const dx = Math.abs(e.clientX - pointerDownPos.current.x)
-    const dy = Math.abs(e.clientY - pointerDownPos.current.y)
-    if (dx > 4 || dy > 4) {
+    const t = e.touches[0]
+    const dx = Math.abs(t.clientX - pointerDownPos.current.x)
+    const dy = Math.abs(t.clientY - pointerDownPos.current.y)
+    if (dx > 6 || dy > 6) {
       pointerDownPos.current = null
-      onDragStart(booking, e)
+      onDragStart(booking, { clientX: t.clientX, clientY: t.clientY, currentTarget: e.currentTarget })
+    } else {
+      e.stopPropagation()
     }
   }
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     e.stopPropagation()
     if (pointerDownPos.current) {
-      setMenuPos({ x: e.clientX, y: e.clientY })
+      const t = e.changedTouches[0]
       pointerDownPos.current = null
+      onBlockTap(booking, t.clientX, t.clientY)
     }
   }
 
@@ -585,9 +622,9 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }
     <div
       className={`sch-booking status-${booking.status}${isBreak ? ' break-block' : ''}`}
       style={isBreak ? { top, height } : { top, height, background: blockColor, borderLeft: `4px solid ${blockColor}`, color: textColor }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="sch-bk-name" style={{ color: textColor }}>{booking.serviceName} · {booking.duration}น.</div>
       {height > Q + 4 && booking.price ? (
@@ -597,19 +634,6 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onDragStart }
         ● {STATUS_LABEL[booking.status] ?? booking.status}
       </div>
 
-      {menuPos && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 499 }} onPointerDown={e => { e.stopPropagation(); setMenuPos(null) }} />
-          <div className="sch-menu" style={{ top: menuPos.y, left: menuPos.x }} onPointerDown={e => e.stopPropagation()}>
-            <button onClick={() => { onStatusChange(booking, NEXT[booking.status]); setMenuPos(null) }}>
-              ↗ {STATUS_LABEL[NEXT[booking.status]]}
-            </button>
-            <button onClick={() => { onEdit(booking); setMenuPos(null) }}>✏️ แก้ไข</button>
-            <button className="danger" onClick={() => { onDelete(booking.id); setMenuPos(null) }}>🗑 ลบ</button>
-            <button onClick={() => setMenuPos(null)}>✕ ปิด</button>
-          </div>
-        </>
-      )}
     </div>
   )
 }
