@@ -390,7 +390,6 @@ function StaffColumn({ therapist, accent, bg, isSickExtra, jobCount, bookings, n
   onBlockTap: (b: Booking, x: number, y: number) => void
 }) {
   const [hoverSlot, setHoverSlot] = useState<number | null>(null)
-  const totalSlots = HOURS.length * 4
 
   const slotToTime = (slot: number) => {
     const maxSlot = HOURS.length * 4 - 1
@@ -547,11 +546,11 @@ function SummaryModal({ bookings, therapists, sickTherapistIds, selectedDate, on
   // หา max จำนวน booking ในบรรดาหมอทั้งหมด เพื่อสร้าง rows
   const maxRows = Math.max(...sorted.map(r => r.tbs.length), 0)
 
-  const cell: React.CSSProperties = { padding: '6px 8px', fontSize: 12, borderBottom: '1px solid #F0F2F5', borderRight: '1px solid #F0F2F5', verticalAlign: 'top', minWidth: 90 }
+  const cell: React.CSSProperties = { padding: '4px 4px', fontSize: 11, borderBottom: '1px solid #F0F2F5', borderRight: '1px solid #F0F2F5', verticalAlign: 'top', width: `${100 / sorted.length}%`, maxWidth: 0, wordBreak: 'break-word' }
   const cellR: React.CSSProperties = { ...cell, textAlign: 'right', fontWeight: 600 }
-  const headCell: React.CSSProperties = { padding: '8px 8px', fontSize: 11, fontWeight: 800, color: '#1A1A2E', background: '#F7F8FA', borderBottom: '2px solid #ECEEF2', borderRight: '1px solid #ECEEF2', textAlign: 'center', whiteSpace: 'nowrap' }
-  const sumCell: React.CSSProperties = { padding: '7px 8px', fontSize: 12, fontWeight: 700, background: '#F0F4FF', borderTop: '2px solid #ECEEF2', borderRight: '1px solid #ECEEF2', textAlign: 'right' }
-  const commCell: React.CSSProperties = { ...sumCell, fontSize: 11, background: '#F7F8FA' }
+  const headCell: React.CSSProperties = { padding: '6px 4px', fontSize: 10, fontWeight: 800, color: '#1A1A2E', background: '#F7F8FA', borderBottom: '2px solid #ECEEF2', borderRight: '1px solid #ECEEF2', textAlign: 'center', width: `${100 / sorted.length}%`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+  const sumCell: React.CSSProperties = { padding: '5px 4px', fontSize: 11, fontWeight: 700, background: '#F0F4FF', borderTop: '2px solid #ECEEF2', borderRight: '1px solid #ECEEF2', textAlign: 'right' }
+  const commCell: React.CSSProperties = { ...sumCell, fontSize: 10, background: '#F7F8FA' }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 600, display: 'flex', alignItems: 'flex-end' }}
@@ -568,7 +567,7 @@ function SummaryModal({ bookings, therapists, sickTherapistIds, selectedDate, on
         </div>
 
         {/* ── ตารางหลัก col=หมอ row=รายการ ── */}
-        <div style={{ margin: '12px 12px 0', overflowX: 'auto' }}>
+        <div style={{ margin: '12px 12px 0' }}>
           <table style={{ borderCollapse: 'collapse', border: '1px solid #ECEEF2', width: '100%' }}>
             <thead>
               <tr>
@@ -588,8 +587,8 @@ function SummaryModal({ bookings, therapists, sickTherapistIds, selectedDate, on
                       <td key={t.id} style={cell}>
                         {b ? (
                           <>
-                            <div style={{ fontSize: 12, color: '#1A1A2E', lineHeight: 1.3 }}>{b.serviceName} · {b.duration}น.</div>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#444', marginTop: 2 }}>{b.price != null ? b.price.toLocaleString() : '—'}</div>
+                            <div style={{ fontSize: 10, color: '#1A1A2E', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.serviceName} · {b.duration}น.</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#444', marginTop: 1 }}>{b.price != null ? b.price.toLocaleString() : '—'}</div>
                           </>
                         ) : null}
                       </td>

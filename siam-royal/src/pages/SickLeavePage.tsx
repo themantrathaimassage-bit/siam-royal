@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AppState } from '../types'
 import { AppData } from '../App'
 import { api } from '../api'
+import { dateStrEAT } from '../dateUtils'
 import '../styles/SickLeavePage.css'
 import '../styles/common.css'
 
@@ -30,8 +31,7 @@ export default function SickLeavePage({ state, setState, data }: Props) {
     setSaving(true)
     setError('')
     try {
-      const d = state.selectedDate
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const dateStr = dateStrEAT(state.selectedDate)
       // เรียงตาม queue order (workingTherapists) ก่อน แล้วตามด้วยคนหยุด
       const ordered = [
         ...state.workingTherapists,

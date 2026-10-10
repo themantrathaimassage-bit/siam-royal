@@ -3,6 +3,7 @@ import { AppState } from '../types'
 import { AppData } from '../App'
 import { api } from '../api'
 import { Therapist } from '../api'
+import { todayEAT, dateStrEAT } from '../dateUtils'
 import '../styles/OpenShopPage.css'
 import '../styles/common.css'
 
@@ -20,7 +21,7 @@ const COLORS = ['teal', 'blue', 'orange', 'purple', 'green', 'pink', 'gray']
 export default function OpenShopPage({ state, setState, data }: Props) {
   const d = state.selectedDate
   const dayName = DAYS_TH[d.getDay()]
-  const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  const dateKey = dateStrEAT(d)
 
   const [selectedId, setSelectedId] = useState<string>('')
   const [saving, setSaving] = useState(false)
@@ -28,8 +29,7 @@ export default function OpenShopPage({ state, setState, data }: Props) {
   const [query, setQuery] = useState('')
   const dateInputRef = useRef<HTMLInputElement>(null)
 
-  const today = new Date()
-  const isToday = d.toDateString() === today.toDateString()
+  const isToday = dateStrEAT(d) === dateStrEAT(todayEAT())
   const dateLine1 = `วัน${dayName}ที่ ${d.getDate()} ${MONTHS_TH[d.getMonth()]}`
   const dateLine2 = `ค.ศ. ${d.getFullYear()}`
 

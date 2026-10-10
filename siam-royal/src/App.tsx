@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { AppState } from './types'
 import { api, Therapist, Service } from './api'
+import { todayEAT, dateStrEAT } from './dateUtils'
 import OpenShopPage from './pages/OpenShopPage'
 import WorkingTodayPage from './pages/WorkingTodayPage'
 import SickLeavePage from './pages/SickLeavePage'
@@ -12,14 +13,9 @@ export interface AppData {
   services: Service[]
 }
 
-function localToday() {
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
-}
-
 const initialState: AppState = {
   currentPage: 'open-shop',
-  selectedDate: localToday(),
+  selectedDate: todayEAT(),
   workingTherapists: [],
   sickTherapists: [],
   sickLeaveData: [],
@@ -38,8 +34,7 @@ export default function App() {
   const prevPage = useRef<AppState['currentPage']>('open-shop')
 
   useEffect(() => {
-    const now = new Date()
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+    const dateStr = dateStrEAT(todayEAT())
     Promise.all([api.therapists.list(), api.services.list(), api.shopOpen.get(dateStr), api.attendance.get(dateStr)])
       .then(([therapists, services, shopLog, attendance]) => {
         setData({ therapists, services })
