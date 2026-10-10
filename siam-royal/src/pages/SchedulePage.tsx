@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AppState } from '../types'
 import { AppData } from '../App'
 import { api, Booking, Therapist } from '../api'
+import { nowEAT, todayEAT, dateStrEAT } from '../dateUtils'
 import BookingModal from '../components/BookingModal'
 import '../styles/SchedulePage.css'
 import '../styles/common.css'
@@ -36,7 +37,7 @@ function toOffset(time: string) {
 
 export default function SchedulePage({ state, setState, data }: Props) {
   const d = state.selectedDate
-  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  const dateStr = dateStrEAT(d)
 
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,6 +47,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
   const [checkout, setCheckout] = useState<Booking | null>(null)
   const [extraSick, setExtraSick] = useState<string[]>([])
   const [blockMenu, setBlockMenu] = useState<{ booking: Booking; x: number; y: number } | null>(null)
+  const [showSummary, setShowSummary] = useState(false)
 
   const workingOrdered = state.workingTherapists
     .map(id => data.therapists.find(t => t.id === id))
@@ -73,11 +75,6 @@ export default function SchedulePage({ state, setState, data }: Props) {
 
   useEffect(() => { loadBookings() }, [loadBookings])
 
-  const changeDate = (offset: number) => {
-    const nd = new Date(state.selectedDate)
-    nd.setDate(nd.getDate() + offset)
-    setState({ ...state, selectedDate: nd })
-  }
 
   const handleStatusChange = async (booking: Booking, status: Booking['status']) => {
     if (status === 'completed') { setCheckout(booking); return }
@@ -121,7 +118,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
     } catch { alert('เกิดข้อผิดพลาด') }
   }
 
-  const now = new Date()
+  const now = nowEAT()
   const nowTop = ((now.getHours() - 10) * 60 + now.getMinutes()) / 15 * Q
   const fullDateStr = `วัน${DAYS_TH_FULL[d.getDay()]}ที่ ${d.getDate()} ${MONTHS_TH_FULL[d.getMonth()]} ค.ศ. ${d.getFullYear()}`
 
@@ -138,7 +135,7 @@ export default function SchedulePage({ state, setState, data }: Props) {
           <div className="sch-topdate-full">{fullDateStr}</div>
         </div>
         <div className="sch-topbar-right">
-          <div className="sch-work-count">{realBookings.length} งาน</div>
+          <button className="sch-work-count" onClick={() => setShowSummary(true)} style={{ cursor: 'pointer', border: 'none', background: '#E6F4F2' }}>{realBookings.length} งาน</button>
           <div style={{ position: 'relative' }}>
             <button className="sch-edit-btn" onClick={() => setEditMenu(v => !v)}>✏️ แก้ไข</button>
             {editMenu && (
@@ -152,10 +149,9 @@ export default function SchedulePage({ state, setState, data }: Props) {
                 <button className="danger" onClick={async () => {
                   if (!confirm('รีเซ็ตวันนี้? จะกลับไปหน้าเปิดร้านใหม่')) return
                   try { await api.shopOpen.reset(dateStr) } catch {}
-                  const now = new Date()
                   setState({
                     currentPage: 'open-shop',
-                    selectedDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                    selectedDate: todayEAT(),
                     workingTherapists: [],
                     sickTherapists: [],
                     sickLeaveData: [],
@@ -222,27 +218,21 @@ export default function SchedulePage({ state, setState, data }: Props) {
               ))}
             </div>
 
-            {allColumns.map((t, i) => {
+            {allColumns.map((t) => {
               const isSickExtra = extraSick.includes(t.id)
-              const queueNum = isSickExtra ? 0 : state.workingTherapists.indexOf(t.id) + 1
               const tBookings = bookings.filter(b => b.therapistId === t.id && b.serviceId !== 'break' && b.clientName !== 'พัก')
               const colorKey = isSickExtra ? 'gray' : COLORS[activeTherapists.indexOf(t) % COLORS.length]
               return (
                 <StaffColumn
                   key={t.id}
                   therapist={t}
-                  color={colorKey}
                   accent={isSickExtra ? '#E07070' : ACCENT[colorKey]}
                   bg={isSickExtra ? '#FEF0EE' : BG[colorKey]}
-                  queueNum={queueNum}
                   isSickExtra={isSickExtra}
                   jobCount={tBookings.length}
                   bookings={bookings.filter(b => b.therapistId === t.id)}
                   nowTop={nowTop}
                   onSlotClick={(time, x, y) => setSlotMenu({ therapistId: t.id, time, x, y })}
-                  onEdit={b => setModal({ open: true, booking: b })}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDelete}
                   onBlockTap={(b, x, y) => setBlockMenu({ booking: b, x, y })}
                 />
               )
@@ -288,6 +278,16 @@ export default function SchedulePage({ state, setState, data }: Props) {
           booking={checkout}
           onConfirm={handleCheckout}
           onClose={() => setCheckout(null)}
+        />
+      )}
+
+      {showSummary && (
+        <SummaryModal
+          bookings={realBookings}
+          therapists={allColumns}
+          sickTherapistIds={state.sickTherapists}
+          selectedDate={state.selectedDate}
+          onClose={() => setShowSummary(false)}
         />
       )}
 
@@ -383,13 +383,10 @@ function CheckoutModal({ booking, onConfirm, onClose }: {
   )
 }
 
-function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onEdit, onStatusChange, onDelete, onBlockTap }: {
-  therapist: Therapist; color: string; accent: string; bg: string; queueNum: number; isSickExtra: boolean; jobCount: number
+function StaffColumn({ therapist, accent, bg, isSickExtra, jobCount, bookings, nowTop, onSlotClick, onBlockTap }: {
+  therapist: Therapist; accent: string; bg: string; isSickExtra: boolean; jobCount: number
   bookings: Booking[]; nowTop: number
   onSlotClick: (time: string, x: number, y: number) => void
-  onEdit: (b: Booking) => void
-  onStatusChange: (b: Booking, s: Booking['status']) => void
-  onDelete: (id: string) => void
   onBlockTap: (b: Booking, x: number, y: number) => void
 }) {
   const [hoverSlot, setHoverSlot] = useState<number | null>(null)
@@ -458,7 +455,7 @@ function StaffColumn({ therapist, color, accent, bg, queueNum, isSickExtra, jobC
         {bookings.map(b => (
           <BookingBlock
             key={b.id} booking={b}
-            onEdit={onEdit} onStatusChange={onStatusChange} onDelete={onDelete} onBlockTap={onBlockTap}
+            onBlockTap={onBlockTap}
           />
         ))}
       </div>
@@ -483,11 +480,8 @@ function getPaymentFromNote(note: string | null): string {
   return ''
 }
 
-function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onBlockTap }: {
+function BookingBlock({ booking, onBlockTap }: {
   booking: Booking
-  onEdit: (b: Booking) => void
-  onStatusChange: (b: Booking, s: Booking['status']) => void
-  onDelete: (id: string) => void
   onBlockTap: (b: Booking, x: number, y: number) => void
 }) {
   const top = toOffset(booking.time)
@@ -517,6 +511,146 @@ function BookingBlock({ booking, onEdit, onStatusChange, onDelete, onBlockTap }:
         ● {({ confirmed: 'ยืนยัน', 'in-session': 'กำลังนวด', completed: 'เช็คเอ้าท์', arrived: 'มาถึง' } as Record<string, string>)[booking.status] ?? booking.status}
       </div>
 
+    </div>
+  )
+}
+
+function SummaryModal({ bookings, therapists, sickTherapistIds, selectedDate, onClose }: {
+  bookings: Booking[]
+  therapists: Therapist[]
+  sickTherapistIds: string[]
+  selectedDate: Date
+  onClose: () => void
+}) {
+  const totalRevenue = bookings.reduce((s, b) => s + (b.price ?? 0), 0)
+
+  const sorted = [...therapists]
+    .map(t => {
+      const tbs = bookings.filter(b => b.therapistId === t.id)
+      const total = tbs.reduce((s, b) => s + (b.price ?? 0), 0)
+      const isSick = sickTherapistIds.includes(t.id)
+      const comm = Math.round(total * (isSick ? 0.5 : 0.1))
+      return { t, tbs, total, isSick, comm }
+    })
+    .filter(r => r.tbs.length > 0)
+    .sort((a, b) => a.total - b.total)
+
+  const PAYMENT_KEYS = ['Cash', 'CRDB', 'M-Kook', 'Gift Card', 'No pay', 'Other']
+  const payMap: Record<string, number> = {}
+  for (const b of bookings) {
+    const p = getPaymentFromNote(b.note)
+    const key = p || 'ยังไม่ชำระ'
+    payMap[key] = (payMap[key] ?? 0) + (b.price ?? 0)
+  }
+  const payEntries = [...PAYMENT_KEYS, 'ยังไม่ชำระ'].map(k => ({ k, v: payMap[k] ?? 0 })).filter(e => e.v > 0)
+
+  // หา max จำนวน booking ในบรรดาหมอทั้งหมด เพื่อสร้าง rows
+  const maxRows = Math.max(...sorted.map(r => r.tbs.length), 0)
+
+  const cell: React.CSSProperties = { padding: '6px 8px', fontSize: 12, borderBottom: '1px solid #F0F2F5', borderRight: '1px solid #F0F2F5', verticalAlign: 'top', minWidth: 90 }
+  const cellR: React.CSSProperties = { ...cell, textAlign: 'right', fontWeight: 600 }
+  const headCell: React.CSSProperties = { padding: '8px 8px', fontSize: 11, fontWeight: 800, color: '#1A1A2E', background: '#F7F8FA', borderBottom: '2px solid #ECEEF2', borderRight: '1px solid #ECEEF2', textAlign: 'center', whiteSpace: 'nowrap' }
+  const sumCell: React.CSSProperties = { padding: '7px 8px', fontSize: 12, fontWeight: 700, background: '#F0F4FF', borderTop: '2px solid #ECEEF2', borderRight: '1px solid #ECEEF2', textAlign: 'right' }
+  const commCell: React.CSSProperties = { ...sumCell, fontSize: 11, background: '#F7F8FA' }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 600, display: 'flex', alignItems: 'flex-end' }}
+      onClick={onClose}>
+      <div style={{ background: '#fff', width: '100%', maxHeight: '88vh', borderRadius: '16px 16px 0 0', overflowY: 'auto', paddingBottom: 24 }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* sticky header */}
+        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid #ECEEF2', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#1A1A2E' }}>สรุปยอด</div>
+          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+            {selectedDate.getDate()}/{selectedDate.getMonth()+1}/{selectedDate.getFullYear()}
+          </div>
+        </div>
+
+        {/* ── ตารางหลัก col=หมอ row=รายการ ── */}
+        <div style={{ margin: '12px 12px 0', overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', border: '1px solid #ECEEF2', width: '100%' }}>
+            <thead>
+              <tr>
+                {sorted.map(({ t, isSick }) => (
+                  <th key={t.id} style={headCell}>
+                    {t.nameEn}{isSick ? ' 🤒' : ''}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: maxRows }).map((_, ri) => (
+                <tr key={ri}>
+                  {sorted.map(({ t, tbs }) => {
+                    const b = tbs[ri]
+                    return (
+                      <td key={t.id} style={cell}>
+                        {b ? (
+                          <>
+                            <div style={{ fontSize: 12, color: '#1A1A2E', lineHeight: 1.3 }}>{b.serviceName} · {b.duration}น.</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#444', marginTop: 2 }}>{b.price != null ? b.price.toLocaleString() : '—'}</div>
+                          </>
+                        ) : null}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+              {/* ยอดรวม */}
+              <tr>
+                {sorted.map(({ t, total }) => (
+                  <td key={t.id} style={sumCell}>{total.toLocaleString()}</td>
+                ))}
+              </tr>
+              {/* ค่าคอม */}
+              <tr>
+                {sorted.map(({ t, comm, isSick }) => (
+                  <td key={t.id} style={{ ...commCell, color: isSick ? '#B00020' : '#2D8C8C' }}>
+                    {comm.toLocaleString()}
+                    <div style={{ fontSize: 9, color: '#AAA' }}>{isSick ? '50%' : '10%'}</div>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── ช่องทางชำระเงิน ── */}
+        {payEntries.length > 0 && (
+          <div style={{ margin: '14px 12px 0', overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', border: '1px solid #ECEEF2', width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ ...headCell, textAlign: 'left' }}>ช่องทางชำระ</th>
+                  <th style={{ ...headCell, textAlign: 'right' }}>ยอด (TZS)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payEntries.map(({ k, v }) => (
+                  <tr key={k}>
+                    <td style={cell}>{k}</td>
+                    <td style={cellR}>{v.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── รายได้รวม ── */}
+        <div style={{ margin: '14px 12px 0', background: '#1A1A2E', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#fff', fontSize: 15, fontWeight: 800 }}>รายได้ร้านวันนี้</span>
+          <span style={{ color: '#7FFFDA', fontSize: 15, fontWeight: 800 }}>TZS {totalRevenue.toLocaleString()}</span>
+        </div>
+
+        <button onClick={onClose} style={{
+          display: 'block', width: 'calc(100% - 24px)', margin: '12px 12px 0',
+          padding: '14px', borderRadius: 10, border: 'none',
+          background: '#F0F2F5', color: '#1A1A2E', fontSize: 15, fontWeight: 700,
+          fontFamily: 'Sarabun, sans-serif', cursor: 'pointer',
+        }}>ปิด</button>
+      </div>
     </div>
   )
 }
