@@ -583,12 +583,18 @@ function SummaryModal({ bookings, therapists, sickTherapistIds, selectedDate, on
                 <tr key={ri}>
                   {sorted.map(({ t, tbs }) => {
                     const b = tbs[ri]
+                    const payKey = b ? getPaymentFromNote(b.note) : ''
+                    const payColor = payKey ? PAYMENT_COLOR[payKey] : null
                     return (
-                      <td key={t.id} style={cell}>
+                      <td key={t.id} style={{
+                        ...cell,
+                        borderLeft: payColor ? `3px solid ${payColor}` : cell.borderRight,
+                        background: payColor ? `${payColor}18` : undefined,
+                      }}>
                         {b ? (
                           <>
                             <div style={{ fontSize: 10, color: '#1A1A2E', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.serviceName} · {b.duration}น.</div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#444', marginTop: 1 }}>{b.price != null ? b.price.toLocaleString() : '—'}</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: payColor ?? '#444', marginTop: 1 }}>{b.price != null ? b.price.toLocaleString() : '—'}</div>
                           </>
                         ) : null}
                       </td>
